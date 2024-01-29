@@ -1,0 +1,144 @@
+using abantu.mvc.Data;
+using abantu.mvc.Models;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using SQLitePCL;
+
+namespace abantu.tests;
+
+public class GerenteTest : FuncionarioTest
+{
+    public GerenteTest() : base()
+    {
+        // Criamos o cargo fictício de gerente
+        var cargoGerente = new Cargo();
+        cargoGerente.Nome = "Gerente";
+        cargoGerente.Nivel = 1;
+        // Criamos um gerente fictício
+        var maria = new Gerente(_db);
+        maria.Nome = "Maria Antunes";
+        maria.Salario = 2000;
+        maria.Cargo = cargoGerente;
+        maria.Email = "m@a.com.br";
+        // Adicionamos ao banco criado na classe mãe
+        _db.Funcionarios.Add(maria);
+        // Salvamos
+        _db.SaveChanges();
+    }
+
+    [Fact]
+    public override void ListarTest()
+    {
+        var expected = 3;
+
+        //Consultamos o primeiro gerente do banco de testes.
+        Gerente gerente = _db.Gerentes.First();
+
+        List<Funcionario> funcionarios = gerente.Listar();
+
+        var actual = funcionarios.Count;
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ContratarTest() {
+        var expected = 4;
+
+        // Procuramos pelo primeiro gerente
+        Gerente gerente = _db.Gerentes.First();
+        // Procuramos pelo cargo de Vendedor.
+        Cargo cargoVendedor = _db.Cargos.First(c => c.Nome == "Vendedor");
+        
+        var novoFuncionario = new Funcionario(_db);
+        novoFuncionario.Nome = "Roberto Lira";
+        novoFuncionario.Cargo = cargoVendedor;
+        novoFuncionario.Salario = 1000;
+        novoFuncionario.Email = "r@l.com.br";
+
+        gerente.Contratar(novoFuncionario);
+
+        var actual = novoFuncionario.Id;
+        
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void NaoDemitirTest()
+    {
+        Gerente gerente = _db.Gerentes.First();
+
+        Funcionario funcionario = _db.Funcionarios.First(f => f.Ativo);
+
+        Assert.Throws<ApplicationException>(() => gerente.Demitir(funcionario));
+    }
+
+    [Fact]
+    public void DemitirTest()
+    {
+        var expected = false;
+
+        Gerente gerente = _db.Gerentes.First();
+        Funcionario funcionario = _db.Funcionarios.First(f => f.Ativo == true);
+
+        Avaliacao avaliacao6 = new Avaliacao();
+        avaliacao6.Avaliado = funcionario;
+        avaliacao6.Avaliador = gerente;
+        avaliacao6.Nota = 6;
+        avaliacao6.RealizadaEm = DateTime.Now;
+        avaliacao6.Comentario = "Razoável";
+
+        Avaliacao avaliacao3 = new Avaliacao();
+        avaliacao3.Avaliado = funcionario;
+        avaliacao3.Avaliador = gerente;
+        avaliacao3.Nota = 3;
+        avaliacao3.RealizadaEm = DateTime.Now;
+        avaliacao3.Comentario = "Ruim";
+
+        funcionario.Avaliacoes = new List<Avaliacao>();
+        funcionario.Avaliacoes.Add(avaliacao6);
+        funcionario.Avaliacoes.Add(avaliacao3);
+
+        _db.SaveChanges();
+
+        funcionario = gerente.Demitir(funcionario);
+
+        var actual = funcionario.Ativo;
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void AumentarSalario(){
+        var expected = 1372;
+
+        Gerente gerente = _db.Gerentes.First();
+        Funcionario funcionario = _db.Funcionarios.First(f => f.Ativo == true);
+
+        Avaliacao avaliacao6 = new Avaliacao();
+        avaliacao6.Avaliado = funcionario;
+        avaliacao6.Avaliador = gerente;
+        avaliacao6.Nota = 6;
+        avaliacao6.RealizadaEm = DateTime.Now;
+        avaliacao6.Comentario = "Razoável";
+
+        Avaliacao avaliacao9 = new Avaliacao();
+        avaliacao9.Avaliado = funcionario;
+        avaliacao9.Avaliador = gerente;
+        avaliacao9.Nota = 9;
+        avaliacao9.RealizadaEm = DateTime.Now;
+        avaliacao9.Comentario = "Muito bom!";
+
+        funcionario.Avaliacoes = new List<Avaliacao>();
+        funcionario.Avaliacoes.Add(avaliacao6);
+        funcionario.Avaliacoes.Add(avaliacao9);
+
+        _db.SaveChanges();
+
+        funcionario = gerente.AumentarSalario(funcionario, expected);
+
+        var actual = funcionario.Salario;
+
+        Assert.Equal(expected, actual);
+    }
+}
