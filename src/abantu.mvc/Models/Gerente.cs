@@ -35,19 +35,16 @@ public class Gerente : Funcionario
 
     public Funcionario Demitir(Funcionario funcionario)
     {
-        if (funcionario.Avaliacoes == null || funcionario.Avaliacoes.Count == 0)
-            throw new ApplicationException("Funcionário não possui avaliações. É necessário uma média inferior a 5 para realizar uma demissão");
-
         var mediaMinima = 5;
-        
+
         var funcionarioDb = _db.Funcionarios.Single(f => f.Id == funcionario.Id);
 
-        if (CalcularMediaAvaliacoes(funcionarioDb.Avaliacoes) < mediaMinima)
-        {
-            funcionarioDb.Ativo = false;
+        if (funcionario.Avaliacoes == null || funcionario.Avaliacoes.Count == 0 || CalcularMediaAvaliacoes(funcionarioDb.Avaliacoes) >= mediaMinima)
+            throw new ApplicationException("Funcionário não possui avaliações. É necessário uma média inferior a 5 para realizar uma demissão");
 
-            _db.SaveChanges();
-        }
+        funcionarioDb.Ativo = false;
+
+        _db.SaveChanges();
 
         return funcionarioDb;
     }
@@ -58,12 +55,12 @@ public class Gerente : Funcionario
 
         var funcionarioDb = _db.Funcionarios.Single(f => f.Id == funcionario.Id);
 
-        if (CalcularMediaAvaliacoes(funcionarioDb.Avaliacoes) > mediaMinima)
-        {
+        if (funcionario.Avaliacoes == null || funcionario.Avaliacoes.Count == 0 || CalcularMediaAvaliacoes(funcionarioDb.Avaliacoes) <= mediaMinima)
+            throw new ApplicationException("Funcionário não possui avaliações. É necessário uma média superior a 7 para realizar um aumento");
+
             funcionarioDb.Salario = novoSalario;
 
             _db.SaveChanges();
-        }
 
         return funcionarioDb;
     }
